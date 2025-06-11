@@ -133,3 +133,28 @@ def delete_article(
         content={"message": "Artículo eliminado correctamente"},
         status_code=status.HTTP_200_OK,
     )
+
+@router.get("/buscar")
+def search_articles(
+    request: Request,
+    query: str,
+    token: str = Depends(oauth2_scheme)
+):
+    user = get_current_user(request, token)
+    if not user:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Not authorized",
+        )
+    articles = request.app.db.query(Article).filter(Article.name.ilike(f"%{query}%")).all()
+    if not articles:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="No se encontraron artículos",
+        )
+    return JSONResponse(
+        content={
+            "articulos": [article.to_json() for article in articles],
+        },
+        status_code=status.HTTP_200_OK,
+    )
