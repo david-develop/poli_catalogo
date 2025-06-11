@@ -2,12 +2,13 @@ import os
 from datetime import UTC, datetime, timedelta
 from functools import wraps
 from typing import Optional
-from pydantic import EmailStr
+
 from dotenv import load_dotenv
 from fastapi import APIRouter, Depends, HTTPException, Response, status
 from fastapi.security import OAuth2PasswordBearer, OAuth2PasswordRequestForm
 from jose import JWTError, jwt
 from passlib.context import CryptContext
+from pydantic import EmailStr
 from starlette.requests import Request
 from starlette.responses import JSONResponse
 
