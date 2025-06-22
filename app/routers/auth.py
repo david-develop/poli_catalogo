@@ -16,7 +16,9 @@ from app.models.models import Admin, Shopper, User
 from app.models.schemas.auth import LoginForm, RegisterForm
 
 router = APIRouter(
-    prefix="/auth", tags=["auth"], responses={401: {"user": "Not authorized"}}
+    prefix="/auth",
+    tags=["auth"],
+    responses={status.HTTP_401_UNAUTHORIZED: {"user": "Not authorized"}},
 )
 
 bcrypt_context = CryptContext(schemes=["bcrypt"], deprecated="auto")

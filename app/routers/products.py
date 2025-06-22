@@ -3,14 +3,15 @@ from fastapi.responses import JSONResponse
 from fastapi.security import OAuth2PasswordBearer
 
 from app.models.models import Article
-from app.models.schemas.products import CreateArticleForm, UpdateArticleForm
+from app.models.schemas.products import (AdvancedSearchForm, CreateArticleForm,
+                                         UpdateArticleForm)
 from app.routers.auth import get_current_user
 
 oauth2_scheme = OAuth2PasswordBearer(tokenUrl="auth/token")
 router = APIRouter(
     prefix="/productos",
     tags=["productos"],
-    responses={404: {"description": "Not found"}},
+    responses={status.HTTP_404_NOT_FOUND: {"description": "Not found"}},
 )
 
 
@@ -208,5 +209,32 @@ def search_articles(request: Request, query: str, token: str = Depends(oauth2_sc
         content={
             "articulos": [article.to_json() for article in articles],
         },
+        status_code=status.HTTP_200_OK,
+    )
+
+
+@router.post("/busqueda-avanzada")
+def advanced_search(
+    request: Request,
+    search: AdvancedSearchForm,
+    token: str = Depends(oauth2_scheme),
+):
+    user = get_current_user(request, token)
+    if not user:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED, detail="Not authorized"
+        )
+    query = request.app.db.query(Article)
+    if search.name:
+        query = query.filter(Article.name.ilike(f"%{search.name}%"))
+    if search.category:
+        query = query.filter(Article.category.ilike(f"%{search.category}%"))
+    if search.min_price is not None:
+        query = query.filter(Article.price >= search.min_price)
+    if search.max_price is not None:
+        query = query.filter(Article.price <= search.max_price)
+    results = query.all()
+    return JSONResponse(
+        content={"articulos": [a.to_json() for a in results]},
         status_code=status.HTTP_200_OK,
     )

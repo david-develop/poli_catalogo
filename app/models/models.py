@@ -2,7 +2,8 @@ import json
 from datetime import UTC, datetime
 from uuid import uuid4
 
-from sqlalchemy import Column, DateTime, Integer, String
+from sqlalchemy import Column, DateTime, ForeignKey, Integer, String
+from sqlalchemy.orm import relationship
 from sqlalchemy.sql.sqltypes import Float
 from starlette.requests import Request
 
@@ -115,3 +116,18 @@ class Article(AppBaseModel, Base):
     description = Column(String)
     price = Column(Float)
     stock = Column(Integer)
+
+
+class Cart(AppBaseModel, Base):
+    __tablename__ = "carts"
+    user_id = Column(String, ForeignKey("users.id"))
+    items = relationship("CartItemModel", back_populates="cart")
+
+
+class CartItemModel(AppBaseModel, Base):
+    __tablename__ = "cart_items"
+    cart_id = Column(String, ForeignKey("carts.id"))
+    article_id = Column(String, ForeignKey("article.id"))
+    quantity = Column(Integer)
+    cart = relationship("Cart", back_populates="items")
+    article = relationship("Article")
