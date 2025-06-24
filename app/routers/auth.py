@@ -25,8 +25,16 @@ bcrypt_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
 oauth2_scheme = OAuth2PasswordBearer(tokenUrl="auth/token")
 
 load_dotenv()
-SECRET_KEY = os.getenv("SECRET_KEY")
-ALGORITHM = os.getenv("ALGORITHM")
+SECRET_KEY = os.getenv("JWT_SECRET")
+ALGORITHM = os.getenv("JWT_ALGORITHM")
+
+# Verificar que las variables de entorno se cargan correctamente
+if not SECRET_KEY:
+    print("⚠️  ADVERTENCIA: JWT_SECRET no encontrado en variables de entorno")
+if not ALGORITHM:
+    print("⚠️  ADVERTENCIA: JWT_ALGORITHM no encontrado en variables de entorno")
+else:
+    print(f"✅ JWT configurado con algoritmo: {ALGORITHM}")
 
 
 def get_password_hash(password):
@@ -130,23 +138,29 @@ def login_access_token(
 @router.post("/login")
 def login(request: Request, data: LoginForm):
     try:
-        validate_user_token = login_access_token(request, form_data=data)
-        user = get_user(request, data.username)
-        print(validate_user_token)
-        token = validate_user_token.get("access_token")
-        if not token:
+        user = authenticate_user(request, data.username, data.password)
+        if not user:
             raise HTTPException(
                 status_code=status.HTTP_401_UNAUTHORIZED, detail="Invalid credentials"
             )
+        
+        # Crear token
+        token_expires = timedelta(minutes=60)
+        access_token = create_access_token(
+            user.username, str(user.id), expires_delta=token_expires
+        )
+        
         return JSONResponse(
             content={
                 "message": "Logged in",
-                "token": token,
+                "token": access_token,
                 "role": user.role,
                 "full_name": user.full_name,
             },
             status_code=status.HTTP_200_OK,
         )
+    except HTTPException:
+        raise
     except Exception as e:
         print(e)
         msg = "Error in credentials"
